@@ -2,23 +2,14 @@
 #
 # Builds the single axisml-core image (Cluster Manager + Compute Service +
 # Artifact Hub modules + the in-process Standalone runtime). The build
-# context is this repository and the sibling AxisML checkout is supplied as the
-# named `axisml` build context so local replace directives resolve:
-#   docker build --build-context axisml=../axisml \
-#     -f axisml-core/Dockerfile -t axisml-core:dev .
+# context is this repository; shared System modules resolve from their released
+# Go module versions.
 
 FROM --platform=$BUILDPLATFORM golang:1.26 AS builder
 ARG TARGETOS
 ARG TARGETARCH
-WORKDIR /workspace
-
-# Recreate the two sibling repository paths under /workspace. The main build
-# context contains axisml-lite; the named context contains shared AxisML modules.
-COPY --from=axisml pkg/axismlconfig/ axisml/pkg/axismlconfig/
-COPY --from=axisml axisml-system/ axisml/axisml-system/
-COPY axisml-core/ axisml-lite/axisml-core/
-
-WORKDIR /workspace/axisml-lite/axisml-core
+WORKDIR /workspace/axisml-core
+COPY axisml-core/ ./
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go mod download

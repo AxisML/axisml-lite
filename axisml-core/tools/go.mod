@@ -2,27 +2,24 @@ module github.com/axisml/axisml-lite/axisml-core/tools
 
 // Dev-only tooling module for axisml-core: the openapi-gen and config-doc-gen
 // commands. It is intentionally SEPARATE from the axisml-core library module so
-// the doc-gen-only dependencies (pkg/openapigen, pkg/configdoc) never enter the
-// module graph that an external project embedding axisml-core has to resolve.
-// This module is never published or tagged — it always resolves its in-repo
-// dependencies through the replace directives below.
+// generated contract composition never enters the module graph that an
+// external project embedding axisml-core has to resolve. This module is never
+// published or tagged.
 
 go 1.26.0
 
 require (
 	github.com/axisml/axisml-lite/axisml-core v0.0.0
-	github.com/axisml/axisml/axisml-system/artifact-hub v0.0.0
-	github.com/axisml/axisml/axisml-system/cluster-manager v0.0.0
-	github.com/axisml/axisml/axisml-system/compute-service v0.0.0
-	github.com/axisml/axisml/pkg/configdoc v0.0.0
-	github.com/axisml/axisml/pkg/openapigen v0.0.0
+	github.com/axisml/axisml/axisml-system/artifact-hub v0.0.1
+	github.com/axisml/axisml/axisml-system/cluster-manager v0.0.1
+	github.com/axisml/axisml/axisml-system/compute-service v0.0.1
+	sigs.k8s.io/yaml v1.6.0
 )
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/axisml/axisml/axisml-system/apis v0.0.0 // indirect
-	github.com/axisml/axisml/pkg/axismlconfig v0.0.0 // indirect
+	github.com/axisml/axisml/axisml-system/apis v0.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.15.0 // indirect
@@ -149,23 +146,7 @@ require (
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
-	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-// Local siblings in the monorepo. Pseudo-versions aren't published, so wire them
-// up via replace directives. Paths are relative to this tools/ directory.
+// The tooling always reflects the current axisml-core checkout.
 replace github.com/axisml/axisml-lite/axisml-core => ..
-
-replace github.com/axisml/axisml/axisml-system/cluster-manager => ../../../axisml/axisml-system/cluster-manager
-
-replace github.com/axisml/axisml/axisml-system/compute-service => ../../../axisml/axisml-system/compute-service
-
-replace github.com/axisml/axisml/axisml-system/artifact-hub => ../../../axisml/axisml-system/artifact-hub
-
-replace github.com/axisml/axisml/pkg/openapigen => ../../../axisml/pkg/openapigen
-
-replace github.com/axisml/axisml/pkg/axismlconfig => ../../../axisml/pkg/axismlconfig
-
-replace github.com/axisml/axisml/pkg/configdoc => ../../../axisml/pkg/configdoc
-
-replace github.com/axisml/axisml/axisml-system/apis => ../../../axisml/axisml-system/apis

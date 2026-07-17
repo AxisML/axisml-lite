@@ -6,6 +6,14 @@ github.com/Masterminds/semver/v3 v3.5.0 h1:kQceYJfbupGfZOKZQg0kou0DgAKhzDg2NZPAw
 github.com/Masterminds/semver/v3 v3.5.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
+github.com/axisml/axisml/axisml-system/apis v0.0.1 h1:2bsb683oaEAhTsb/ZJ7TqP20chtl1GuQIFM7URvW+XE=
+github.com/axisml/axisml/axisml-system/apis v0.0.1/go.mod h1:f+AtPsho/M4yygA4Dw7SCS8OzUA47OlZQ7Toccci1nA=
+github.com/axisml/axisml/axisml-system/artifact-hub v0.0.1 h1:ZeTZ1vtv73b893QtMA41cQvkvCVQjZp+58gjfcEHd7Q=
+github.com/axisml/axisml/axisml-system/artifact-hub v0.0.1/go.mod h1:c3r3YoVxOmdDcXGt8NjYZVI0TbJy1AkkEvDy/bO5oi4=
+github.com/axisml/axisml/axisml-system/cluster-manager v0.0.1 h1:R7TX4nn8WAb8zS5KfyQXzFW7D6+HbphmiSG/E73NsMc=
+github.com/axisml/axisml/axisml-system/cluster-manager v0.0.1/go.mod h1:Mx9StIE6L9UYCcbPY4QKNm9DAq30u25U4CXMsxQd7Dw=
+github.com/axisml/axisml/axisml-system/compute-service v0.0.1 h1:w0y/C2XwZXihFEjYYOTo3/xZK4IPDNoohEAhGDXuWUE=
+github.com/axisml/axisml/axisml-system/compute-service v0.0.1/go.mod h1:2HDHlliQMym49ZBrvHIUbE6BCEUO3TBNr2rlZ4vzd+c=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bytedance/gopkg v0.1.3 h1:TPBSwH8RsouGCBcMBktLt1AymVo2TVsBVCY4b6TnZ/M=

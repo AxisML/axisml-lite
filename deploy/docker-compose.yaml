@@ -8,8 +8,8 @@
 #   docker compose up -d                                   # db + core + platform + zot
 #   docker compose --profile storage --profile gateway up -d   # + rustfs + gateway
 #
-# axisml-core builds from this repository and receives the sibling ../axisml
-# checkout as a named build context while local replace directives are in use.
+# axisml-core builds entirely from this repository; shared System code resolves
+# through released Go modules.
 # axisml-platform is consumed as a published image; this repository does not
 # build Platform source.
 
@@ -35,8 +35,6 @@ services:
     build:
       context: ..
       dockerfile: axisml-core/Dockerfile
-      additional_contexts:
-        axisml: ../../axisml
     image: ghcr.io/axisml/axisml-core:latest
     depends_on:
       axisml-database:

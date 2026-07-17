@@ -8,10 +8,9 @@ runtime implementation stays under `axisml-core/internal/runtime/standalone`.
 `deploy/` owns Docker Compose and static ResourcePool/Tenant YAML. Generated
 OpenAPI output is committed under `docs/apis/` and embedded into `pkg/core`.
 
-Until shared AxisML modules are published, clone `axisml` beside this repository.
-The `go.mod` files intentionally use local `replace` directives into
-`../axisml`; keep the two checkouts as siblings when running dependency or doc
-generation commands.
+AxisML runtime dependencies resolve through released Go module versions; normal
+build, test, image, and document-generation workflows require no sibling
+`axisml` checkout.
 
 ## Build and Test
 
@@ -21,7 +20,7 @@ generation commands.
 - `make fmt`: run gofmt/goimports.
 - `make tidy`: tidy both Go modules.
 - `make doc-gen` / `make doc-test`: regenerate or verify the composite OpenAPI.
-- `make image`: build with the sibling AxisML checkout as a named BuildKit context.
+- `make image`: build the standalone axisml-core image.
 - `make lite-up` / `make lite-down`: manage the local Compose stack.
 
 Use `GOCACHE=/tmp/axisml-lite-go-cache` if the default macOS Go cache is not

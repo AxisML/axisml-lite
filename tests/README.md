@@ -14,8 +14,8 @@ uv run test-setup
 ```
 
 `test-setup` runs the repository's `make lite-up`, waits for Platform readiness,
-and resets the test admin password. The sibling `axisml` checkout is required by
-the local Go `replace` directives while the shared modules remain unpublished.
+and resets the test admin password. The normal test workflow requires no sibling
+`axisml` source checkout.
 
 ## Run
 
