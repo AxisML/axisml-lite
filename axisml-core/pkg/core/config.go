@@ -8,7 +8,7 @@ package core
 import (
 	"fmt"
 
-	"github.com/axisml/axisml/pkg/axismlconfig"
+	"github.com/axisml/axisml-lite/axisml-core/internal/configutil"
 )
 
 // Config is the axisml-core process configuration. Lite runs under Docker
@@ -19,7 +19,7 @@ import (
 // (ports, reconcile cadence, GC, filesystem paths, Docker network) is a fixed
 // constant — see consts.go.
 type Config struct {
-	axismlconfig.Common `mapstructure:",squash"`
+	Common `mapstructure:",squash"`
 
 	OCI      OCI      `mapstructure:"oci"`
 	GPU      GPU      `mapstructure:"gpu"`
@@ -51,7 +51,7 @@ type OCI struct {
 // secret files. axisml-core reads no config file (env-only).
 func Load() (Config, error) {
 	var c Config
-	if err := axismlconfig.Load(&c, axismlconfig.Options{EnvOnly: true}); err != nil {
+	if err := configutil.Load(&c); err != nil {
 		return Config{}, err
 	}
 	return c, nil

@@ -15,9 +15,9 @@ package core
 // The composite document is generated at build time by axisml-core/tools/openapi-gen
 // (which owns the reflection-based fold of the three System surfaces) and embedded
 // here as openapi.gen.yaml. Keeping the generator in the never-published tools
-// module means the pkg/openapigen doc-gen dependency never enters the library an
-// external project embeds — pkg/core only parses and filters the bytes it already
-// carries. The scope+prune, header-injection and info-reframing logic below is the
+// module means generation-only code never enters the library an external project
+// embeds — pkg/core only parses and filters the bytes it already carries. The
+// scope+prune, header-injection and info-reframing logic below is the
 // only spec logic that runs at the embedder's runtime, and it works on the decoded
 // document so it needs no OpenAPI model type.
 

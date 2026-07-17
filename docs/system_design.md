@@ -137,7 +137,7 @@ axisml-lite/
 └── Makefile
 ```
 
-`axisml-platform` 使用 AxisML 主仓库发布的 Platform 镜像。共享 System modules 正式发布前，`axisml-core` 通过 `go.mod` 的本地 `replace` 指令依赖兄弟 `../axisml` checkout 中 Cluster Manager、Compute Service 和 Artifact Hub 的 `pkg/module` 公共装配 API，将三者编译进同一个 binary 并注入 Standalone provider；同时依赖 `MLRun` / `MLService` / `MLTrafficPolicy` API packages，在 `internal/runtime/standalone` 进程内实现 Compute Service 发布的 `computeruntime.ComputeRuntime` 接口，并注入到 Compute 模块。该实现驱动 Docker Engine Adapter、volume、network 和 Traefik file provider 并采集运行态。Docker Engine Adapter、配置型资源目录和 Compose 资产由独立 `axisml-lite` 仓库维护。
+`axisml-platform` 使用 AxisML 主仓库发布的 Platform 镜像。`axisml-core` 通过已发布版本依赖 Cluster Manager、Compute Service 和 Artifact Hub 的 `pkg/module` 公共装配 API，将三者编译进同一个 binary 并注入 Standalone provider；同时依赖已发布的 `MLRun` / `MLService` / `MLTrafficPolicy` API packages，在 `internal/runtime/standalone` 进程内实现 Compute Service 发布的 `computeruntime.ComputeRuntime` 接口，并注入到 Compute 模块。构建、测试、文档生成和镜像构建均不需要兄弟 `axisml` checkout。Docker Engine Adapter、配置型资源目录和 Compose 资产由独立 `axisml-lite` 仓库维护。
 
 AxisML 主仓库为三个 System 服务提供公共装配 API：
 
@@ -158,15 +158,15 @@ axisml-system/<service>/pkg/module
 - `App.Handler()`——返回 axisml-core 自建的 gin engine（opaque `http.Handler`），供非 gin / stdlib 宿主挂载。
 - `App.Serve(ctx)`——Standalone binary 走此路径，监听 `Settings.APIBindAddress` 并托管后台 loop 至优雅关闭。
 
-此外，包级函数 `core.OpenAPISpec(format, opts...)` 以 bytes 形式返回 axisml-core 完整 HTTP 面的 OpenAPI 3.0.3 文档（`core.SpecYAML` / `core.SpecJSON`）：可选按 `WithPathPrefixes` 路径前缀裁剪（`components.schemas` 同步裁剪到被保留 operation 的 `$ref` 传递闭包——无悬挂引用、不泄漏未暴露资源，空 tag 一并移除），并用 `WithInfo` / `WithVersion` 改写 `info`、用 `WithGlobalHeaderParam` 为每个 operation 追加网关所需的身份 header。它是包级函数而非 `App` 方法：契约是静态的，嵌入方在纯 doc-gen 步骤中即可生成自己发布的子集规格，无需数据库或 Docker。该文档由 dev-only 的 `axisml-core/tools/openapi-gen` 在构建期折叠三个 System 面生成，并 `//go:embed` 进 `pkg/core`（`App` 在 `/openapi.{yaml,json}` 托管同一份 bytes）；反射式 doc-gen 依赖 `pkg/openapigen` 因此始终留在 tools module，`pkg/core` 只解析并裁剪已内嵌的 bytes，不进入嵌入库的构建图。
+此外，包级函数 `core.OpenAPISpec(format, opts...)` 以 bytes 形式返回 axisml-core 完整 HTTP 面的 OpenAPI 3.0.3 文档（`core.SpecYAML` / `core.SpecJSON`）：可选按 `WithPathPrefixes` 路径前缀裁剪（`components.schemas` 同步裁剪到被保留 operation 的 `$ref` 传递闭包——无悬挂引用、不泄漏未暴露资源，空 tag 一并移除），并用 `WithInfo` / `WithVersion` 改写 `info`、用 `WithGlobalHeaderParam` 为每个 operation 追加网关所需的身份 header。它是包级函数而非 `App` 方法：契约是静态的，嵌入方在纯 doc-gen 步骤中即可生成自己发布的子集规格，无需数据库或 Docker。该文档由 dev-only 的 `axisml-core/tools/openapi-gen` 在构建期折叠三个 System runtime modules 内嵌的已生成规格，并 `//go:embed` 进 `pkg/core`（`App` 在 `/openapi.{yaml,json}` 托管同一份 bytes）；生成工具不进入可嵌入库的构建图。
 
 后台 loop（Compute reconciler 与 status poller、Artifact Hub GC worker）经 `App.Runnables()` 交由宿主启动，或由 `Serve` 自行启动，二者互斥（`Runnables()` 与 `Serve` 只有一方能认领这组 loop）。数据库、静态 pool/tenant 配置、logger 与运行参数分别由 `WithDB` / `WithStaticConfig` / `WithLogger` / `WithSettings` 注入。典型宿主用法：`core.New` 后调用 `app.Migrate()`，把 `app.RegisterRoutes(r.Group("/axisml"))` 挂到宿主自有 `*gin.Engine`，在同一 engine 上追加自有路由，并用 `app.Runnables()` 启动后台 loop。
 
-axisml-core 作为库被外部项目消费时，当前需在外部 `go.mod` 中分别 `replace` 新仓库的 axisml-core 与 AxisML 主仓库中的传递模块；Go 不会传递依赖模块自己的 `replace`。共享 modules 与 axisml-core 发布版本后，可移除这些本地路径并直接 `go get github.com/axisml/axisml-lite/axisml-core@<version>`。仅 doc-gen 使用的 `pkg/openapigen`、`pkg/configdoc` 留在独立的 dev-only `axisml-core/tools` module，不进入可嵌入库的构建图。
+axisml-core 作为库发布后，外部项目可直接 `go get github.com/axisml/axisml-lite/axisml-core@<version>`；其传递依赖均为已发布的 System runtime modules，不需要本地路径 `replace`。`axismlconfig`、`openapigen`、`configdoc` 均不是 Lite 的发布依赖。
 
 依赖与发布规则：
 
-- `axisml-core` 是独立仓库中的 Go module；过渡期通过本地 `replace` 依赖兄弟 AxisML checkout，依赖升级必须显式同步并验证。
+- `axisml-core` 是独立仓库中的 Go module；System runtime module 版本必须显式固定并作为一组验证。
 - Lite release 固定一组兼容的 Platform 镜像、System module 和数据库 schema 版本，不使用浮动 `latest`。
 - AxisML 主仓库的公共装配 API 对 Standard 与 Lite 两种形态保持稳定契约。
 - OpenAPI DTO、migration 和领域状态机由 System 组件生成和维护。

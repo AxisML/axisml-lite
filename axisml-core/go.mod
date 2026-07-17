@@ -3,15 +3,17 @@ module github.com/axisml/axisml-lite/axisml-core
 go 1.26.0
 
 require (
-	github.com/axisml/axisml/axisml-system/artifact-hub v0.0.0
-	github.com/axisml/axisml/axisml-system/cluster-manager v0.0.0
-	github.com/axisml/axisml/axisml-system/compute-service v0.0.0
+	github.com/axisml/axisml/axisml-system/artifact-hub v0.0.1
+	github.com/axisml/axisml/axisml-system/cluster-manager v0.0.1
+	github.com/axisml/axisml/axisml-system/compute-service v0.0.1
 	github.com/containerd/errdefs v1.0.0
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-logr/logr v1.4.3
+	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/spf13/cobra v1.10.2
+	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.11.1
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
@@ -22,7 +24,6 @@ require (
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/klauspost/crc32 v1.3.0 // indirect
 	github.com/minio/crc64nvme v1.1.1 // indirect
@@ -34,7 +35,6 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
-	github.com/spf13/viper v1.20.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tinylib/msgp v1.6.1 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
@@ -45,8 +45,7 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/axisml/axisml/axisml-system/apis v0.0.0
-	github.com/axisml/axisml/pkg/axismlconfig v0.0.0
+	github.com/axisml/axisml/axisml-system/apis v0.0.1
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.15.0 // indirect
@@ -153,13 +152,3 @@ require (
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 )
-
-replace github.com/axisml/axisml/axisml-system/cluster-manager => ../../axisml/axisml-system/cluster-manager
-
-replace github.com/axisml/axisml/axisml-system/compute-service => ../../axisml/axisml-system/compute-service
-
-replace github.com/axisml/axisml/axisml-system/artifact-hub => ../../axisml/axisml-system/artifact-hub
-
-replace github.com/axisml/axisml/pkg/axismlconfig => ../../axisml/pkg/axismlconfig
-
-replace github.com/axisml/axisml/axisml-system/apis => ../../axisml/axisml-system/apis

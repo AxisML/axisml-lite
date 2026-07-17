@@ -48,15 +48,9 @@ Operational parameters — bind address, filesystem paths, Docker network, backg
 
 ## Build / run
 
-During the pre-release split, clone the shared `axisml` repository beside this
-repository. The Go modules use local `replace` directives and the image build
-passes that sibling checkout as a named BuildKit context:
-
-```text
-MySpace/
-├── axisml/
-└── axisml-lite/
-```
+The released System modules are resolved through the Go module proxy. Building,
+testing, generating the composite API document, and building the image require
+only this checkout.
 
 ```sh
 make help                  # list targets
