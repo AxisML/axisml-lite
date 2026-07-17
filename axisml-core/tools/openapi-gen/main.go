@@ -1,9 +1,8 @@
 // openapi-gen renders the COMPLETE OpenAPI 3.0.3 description of the axisml-core
 // HTTP surface and writes it to two committed locations:
 //
-//   - axisml-lite/docs/apis/axisml-core.yaml — the canonical published contract,
-//     alongside every other layer's generated spec (the -o flag).
-//   - axisml-lite/axisml-core/pkg/core/openapi.gen.yaml — the byte-identical copy
+//   - docs/apis/axisml-core.yaml — the canonical published contract (the -o flag).
+//   - axisml-core/pkg/core/openapi.gen.yaml — the byte-identical copy
 //     that pkg/core embeds and serves/filters at runtime (the -embed flag).
 //     A go:embed directive cannot reach across module directories into
 //     docs/apis, so the library keeps its own in-package copy; doc-test
@@ -39,7 +38,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/axisml/axisml/axisml-lite/axisml-core/pkg/core"
+	"github.com/axisml/axisml-lite/axisml-core/pkg/core"
 	arthubapidoc "github.com/axisml/axisml/axisml-system/artifact-hub/pkg/apidoc"
 	clustermgrapidoc "github.com/axisml/axisml/axisml-system/cluster-manager/pkg/apidoc"
 	computeapidoc "github.com/axisml/axisml/axisml-system/compute-service/pkg/apidoc"

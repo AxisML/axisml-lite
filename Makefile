@@ -1,10 +1,10 @@
-# AxisML Lite layer Makefile. Builds the single axisml-core binary/image and
-# runs the Lite unit + e2e suites. The Go module lives under axisml-core/; the
-# image is built from the repo ROOT so the go.mod replace directives resolve the
-# sibling System modules.
+# AxisML Lite repository Makefile. Builds the single axisml-core binary/image.
+# Until the shared AxisML modules are published, local development expects the
+# axisml checkout beside this repository (../axisml).
 
-REPO_ROOT := $(abspath $(CURDIR)/..)
+REPO_ROOT := $(abspath $(CURDIR))
 CORE_DIR := $(CURDIR)/axisml-core
+AXISML_REPO ?= ../axisml
 IMAGE_TAG ?= dev
 IMAGE ?= axisml-core:$(IMAGE_TAG)
 
@@ -15,7 +15,7 @@ IMAGE ?= axisml-core:$(IMAGE_TAG)
 COMPOSE := docker compose -f deploy/docker-compose.yaml
 PROFILE_FLAGS := $(foreach p,$(PROFILES),--profile $(p))
 
-.PHONY: help build test vet fmt tidy image doc-gen doc-test lite-up lite-down lite-delete clean
+.PHONY: help build test vet fmt tidy image doc-gen doc-test client-gen lite-up lite-down lite-delete clean
 
 # axisml-core's OpenAPI spec: the COMPLETE composite HTTP surface. openapi-gen
 # folds the three System surfaces — built in-process from each System module's
@@ -58,17 +58,21 @@ tidy: ## Tidy the axisml-core module and its tools module
 # writes the canonical docs/apis copy and the pkg/core embed copy in one run.
 doc-gen: ## Regenerate the axisml-core OpenAPI spec (folds in the System surfaces)
 	cd $(CORE_DIR)/tools && go run ./openapi-gen \
-	  -o $(REPO_ROOT)/axisml-lite/$(LITE_SPEC) \
-	  -embed $(REPO_ROOT)/axisml-lite/$(LITE_EMBED_SPEC)
+	  -o $(REPO_ROOT)/$(LITE_SPEC) \
+	  -embed $(REPO_ROOT)/$(LITE_EMBED_SPEC)
 
 doc-test: doc-gen ## Verify the axisml-core spec is in sync with the code
-	@cd $(REPO_ROOT) && if ! git diff --quiet -- axisml-lite/$(LITE_SPEC) axisml-lite/$(LITE_EMBED_SPEC); then \
-	  echo "ERROR: axisml-lite OpenAPI spec is out of date. Run 'make -C axisml-lite doc-gen' and commit."; \
-	  git --no-pager diff -- axisml-lite/$(LITE_SPEC) axisml-lite/$(LITE_EMBED_SPEC); exit 1; \
+	@cd $(REPO_ROOT) && if ! git diff --quiet -- $(LITE_SPEC) $(LITE_EMBED_SPEC); then \
+	  echo "ERROR: axisml-core OpenAPI spec is out of date. Run 'make doc-gen' and commit."; \
+	  git --no-pager diff -- $(LITE_SPEC) $(LITE_EMBED_SPEC); exit 1; \
 	fi
 
+client-gen: ## Regenerate black-box test clients from the sibling AxisML specs
+	@$(MAKE) -C tests client-gen
+
 image: ## Build the axisml-core image (context = repo root)
-	docker build -f $(CORE_DIR)/Dockerfile -t $(IMAGE) $(REPO_ROOT)
+	docker build --build-context axisml=$(abspath $(AXISML_REPO)) \
+	  -f $(CORE_DIR)/Dockerfile -t $(IMAGE) $(REPO_ROOT)
 
 lite-up: ## Bring up the Lite stack (db + axisml-core on :8090 + platform UI on :8080; PROFILES="storage gateway" for more)
 	$(COMPOSE) $(PROFILE_FLAGS) up -d --build

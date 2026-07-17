@@ -1,0 +1,7 @@
+.git
+.github
+.venv
+**/bin
+**/coverage
+**/*.out
+**/.DS_Store

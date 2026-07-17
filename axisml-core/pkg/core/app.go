@@ -21,7 +21,7 @@ import (
 	"github.com/axisml/axisml/axisml-system/compute-service/pkg/logging"
 	computemodule "github.com/axisml/axisml/axisml-system/compute-service/pkg/module"
 
-	"github.com/axisml/axisml/axisml-lite/axisml-core/internal/runtime/standalone"
+	"github.com/axisml/axisml-lite/axisml-core/internal/runtime/standalone"
 )
 
 // Runnable is the common shape of every background loop the modules expose (the

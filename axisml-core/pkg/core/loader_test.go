@@ -15,7 +15,7 @@ import (
 	cmv1alpha1 "github.com/axisml/axisml/axisml-system/apis/resourcepool/v1alpha1"
 	tenantv1alpha1 "github.com/axisml/axisml/axisml-system/apis/tenant/v1alpha1"
 
-	"github.com/axisml/axisml/axisml-lite/axisml-core/pkg/core"
+	"github.com/axisml/axisml-lite/axisml-core/pkg/core"
 )
 
 // validPool returns a ResourcePool that satisfies every Lite invariant so tests

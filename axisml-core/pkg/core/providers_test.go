@@ -14,7 +14,7 @@ import (
 	tenantv1alpha1 "github.com/axisml/axisml/axisml-system/apis/tenant/v1alpha1"
 	cmext "github.com/axisml/axisml/axisml-system/cluster-manager/pkg/extensions"
 
-	"github.com/axisml/axisml/axisml-lite/axisml-core/pkg/core"
+	"github.com/axisml/axisml-lite/axisml-core/pkg/core"
 )
 
 func TestConfigResourceCatalog_Reads(t *testing.T) {

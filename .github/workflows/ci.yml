@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out AxisML Lite
+        uses: actions/checkout@v4
+        with:
+          path: axisml-lite
+      - name: Check out shared AxisML modules
+        uses: actions/checkout@v4
+        with:
+          repository: AxisML/axisml
+          path: axisml
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: axisml-lite/axisml-core/go.mod
+          cache-dependency-path: |
+            axisml-lite/axisml-core/go.sum
+            axisml-lite/axisml-core/tools/go.sum
+      - name: Test
+        working-directory: axisml-lite
+        run: make test
+      - name: Vet
+        working-directory: axisml-lite
+        run: make vet
+      - name: Verify generated OpenAPI
+        working-directory: axisml-lite
+        run: make doc-test
+      - name: Validate Compose
+        working-directory: axisml-lite
+        run: docker compose -f deploy/docker-compose.yaml config --quiet

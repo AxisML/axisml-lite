@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/axisml/axisml/axisml-lite/axisml-core/pkg/core"
+	"github.com/axisml/axisml-lite/axisml-core/pkg/core"
 )
 
 func main() {

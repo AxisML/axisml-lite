@@ -1,4 +1,4 @@
-module github.com/axisml/axisml/axisml-lite/axisml-core/tools
+module github.com/axisml/axisml-lite/axisml-core/tools
 
 // Dev-only tooling module for axisml-core: the openapi-gen and config-doc-gen
 // commands. It is intentionally SEPARATE from the axisml-core library module so
@@ -10,7 +10,7 @@ module github.com/axisml/axisml/axisml-lite/axisml-core/tools
 go 1.26.0
 
 require (
-	github.com/axisml/axisml/axisml-lite/axisml-core v0.0.0
+	github.com/axisml/axisml-lite/axisml-core v0.0.0
 	github.com/axisml/axisml/axisml-system/artifact-hub v0.0.0
 	github.com/axisml/axisml/axisml-system/cluster-manager v0.0.0
 	github.com/axisml/axisml/axisml-system/compute-service v0.0.0
@@ -154,18 +154,18 @@ require (
 
 // Local siblings in the monorepo. Pseudo-versions aren't published, so wire them
 // up via replace directives. Paths are relative to this tools/ directory.
-replace github.com/axisml/axisml/axisml-lite/axisml-core => ..
+replace github.com/axisml/axisml-lite/axisml-core => ..
 
-replace github.com/axisml/axisml/axisml-system/cluster-manager => ../../../axisml-system/cluster-manager
+replace github.com/axisml/axisml/axisml-system/cluster-manager => ../../../axisml/axisml-system/cluster-manager
 
-replace github.com/axisml/axisml/axisml-system/compute-service => ../../../axisml-system/compute-service
+replace github.com/axisml/axisml/axisml-system/compute-service => ../../../axisml/axisml-system/compute-service
 
-replace github.com/axisml/axisml/axisml-system/artifact-hub => ../../../axisml-system/artifact-hub
+replace github.com/axisml/axisml/axisml-system/artifact-hub => ../../../axisml/axisml-system/artifact-hub
 
-replace github.com/axisml/axisml/pkg/openapigen => ../../../pkg/openapigen
+replace github.com/axisml/axisml/pkg/openapigen => ../../../axisml/pkg/openapigen
 
-replace github.com/axisml/axisml/pkg/axismlconfig => ../../../pkg/axismlconfig
+replace github.com/axisml/axisml/pkg/axismlconfig => ../../../axisml/pkg/axismlconfig
 
-replace github.com/axisml/axisml/pkg/configdoc => ../../../pkg/configdoc
+replace github.com/axisml/axisml/pkg/configdoc => ../../../axisml/pkg/configdoc
 
-replace github.com/axisml/axisml/axisml-system/apis => ../../../axisml-system/apis
+replace github.com/axisml/axisml/axisml-system/apis => ../../../axisml/axisml-system/apis

@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/axisml/axisml/axisml-lite/axisml-core/pkg/core"
+	"github.com/axisml/axisml-lite/axisml-core/pkg/core"
 )
 
 func TestDefaultSettings(t *testing.T) {

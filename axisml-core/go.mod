@@ -1,4 +1,4 @@
-module github.com/axisml/axisml/axisml-lite/axisml-core
+module github.com/axisml/axisml-lite/axisml-core
 
 go 1.26.0
 
@@ -154,12 +154,12 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 )
 
-replace github.com/axisml/axisml/axisml-system/cluster-manager => ../../axisml-system/cluster-manager
+replace github.com/axisml/axisml/axisml-system/cluster-manager => ../../axisml/axisml-system/cluster-manager
 
-replace github.com/axisml/axisml/axisml-system/compute-service => ../../axisml-system/compute-service
+replace github.com/axisml/axisml/axisml-system/compute-service => ../../axisml/axisml-system/compute-service
 
-replace github.com/axisml/axisml/axisml-system/artifact-hub => ../../axisml-system/artifact-hub
+replace github.com/axisml/axisml/axisml-system/artifact-hub => ../../axisml/axisml-system/artifact-hub
 
-replace github.com/axisml/axisml/pkg/axismlconfig => ../../pkg/axismlconfig
+replace github.com/axisml/axisml/pkg/axismlconfig => ../../axisml/pkg/axismlconfig
 
-replace github.com/axisml/axisml/axisml-system/apis => ../../axisml-system/apis
+replace github.com/axisml/axisml/axisml-system/apis => ../../axisml/axisml-system/apis

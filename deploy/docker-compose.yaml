@@ -8,9 +8,10 @@
 #   docker compose up -d                                   # db + core + platform + zot
 #   docker compose --profile storage --profile gateway up -d   # + rustfs + gateway
 #
-# Both the axisml-core and axisml-platform images build from the repo ROOT (the
-# go.mod replace directives need the sibling modules in the build context):
-#   docker compose build           # uses ../.. as context (set below)
+# axisml-core builds from this repository and receives the sibling ../axisml
+# checkout as a named build context while local replace directives are in use.
+# axisml-platform is consumed as a published image; this repository does not
+# build Platform source.
 
 name: axisml-lite
 
@@ -32,8 +33,10 @@ services:
 
   axisml-core:
     build:
-      context: ../..
-      dockerfile: axisml-lite/axisml-core/Dockerfile
+      context: ..
+      dockerfile: axisml-core/Dockerfile
+      additional_contexts:
+        axisml: ../../axisml
     image: ghcr.io/axisml/axisml-core:latest
     depends_on:
       axisml-database:
@@ -109,9 +112,6 @@ services:
   # (migrate + seed the system-admin and default tenant) runs to completion, then
   # the long-running `serve`. Part of the default Lite stack — Lite ships the UI.
   axisml-platform-bootstrap:
-    build: &platform-build
-      context: ../..
-      dockerfile: axisml-platform/Dockerfile
     image: &platform-image ghcr.io/axisml/axisml-platform:latest
     command: ["bootstrap"]
     restart: "no"
@@ -135,7 +135,6 @@ services:
     networks: [axisml-control]
 
   axisml-platform:
-    build: *platform-build
     image: *platform-image
     command: ["serve"]
     depends_on:

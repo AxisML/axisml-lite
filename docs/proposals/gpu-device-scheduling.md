@@ -170,7 +170,7 @@ func IsResourceUnavailable(err error) bool
 - `internal/kuberuntime/runtime.go` — `ApplyMLService` 幂等守卫。
 
 **部署：**
-- `axisml-lite/deploy/docker-compose.yaml` — `AXISML_GPU_DEVICES` 示例 + GPU 暴露。
+- `deploy/docker-compose.yaml` — `AXISML_GPU_DEVICES` 示例 + GPU 暴露。
 
 ## 9. 非目标 / 边界
 
@@ -192,7 +192,7 @@ func IsResourceUnavailable(err error) bool
 
 ## 11. 文档更新
 
-- `axisml-lite/docs/system_design.md`：§2 能力矩阵 GPU 行、§5.1.1 配置、§6.5 资源/配额/GPU、§6.6 状态映射
+- `docs/system_design.md`：§2 能力矩阵 GPU 行、§5.1.1 配置、§6.5 资源/配额/GPU、§6.6 状态映射
   （`Creating→Pending→Running`，`Pending` 含"等待可用 GPU"）。
 - compute-service 状态机文档：`Pending` = 正在放置 / 等待资源；`reflectGone` 只对已放置负载做 gone 处理。
-- `axisml-lite/deploy/config/` 与 `docker-compose.yaml` 示例。
+- `deploy/config/` 与 `deploy/docker-compose.yaml` 示例。

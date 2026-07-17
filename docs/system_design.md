@@ -106,7 +106,7 @@ Platform 保持独立进程和现有 HTTP client 边界。Cluster Manager、Comp
 
 ### 3.2 代码组织
 
-AxisML Lite 是 AxisML monorepo 的顶层 `axisml-lite/` 目录，与 `axisml-platform/`、`axisml-system/`、`axisml-infra/` 并列。Go module 落在子目录 `axisml-core/`，构建单一 `axisml-core` 镜像，承载 System 模块装配、Standalone Runtime；部署资产与文档在 `axisml-lite/` 层维护：
+AxisML Lite 使用独立的 `github.com/AxisML/axisml-lite` 仓库。Go module 落在子目录 `axisml-core/`，构建单一 `axisml-core` 镜像，承载 System 模块装配、Standalone Runtime；部署资产、测试与文档均由该仓库维护：
 
 ```text
 axisml-lite/
@@ -137,9 +137,9 @@ axisml-lite/
 └── Makefile
 ```
 
-`axisml-platform` 使用 monorepo 发布的 Platform 镜像。`axisml-core` 通过 `go.mod` 的仓库内 `replace` 指令依赖 Cluster Manager、Compute Service 和 Artifact Hub 的 `pkg/module` 公共装配 API，将三者编译进同一个 binary 并注入 Standalone provider；同时依赖 `MLRun` / `MLService` / `MLTrafficPolicy` API packages，在 `internal/runtime/standalone` 进程内实现 Compute Service 发布的 `computeruntime.ComputeRuntime` 接口，并注入到 Compute 模块。该实现驱动 Docker Engine Adapter、volume、network 和 Traefik file provider 并采集运行态。Docker Engine Adapter、配置型资源目录和 Compose 资产同由 `axisml-lite/` 维护，构建单一 Dockerfile 和镜像，由 Compose 拉起。
+`axisml-platform` 使用 AxisML 主仓库发布的 Platform 镜像。共享 System modules 正式发布前，`axisml-core` 通过 `go.mod` 的本地 `replace` 指令依赖兄弟 `../axisml` checkout 中 Cluster Manager、Compute Service 和 Artifact Hub 的 `pkg/module` 公共装配 API，将三者编译进同一个 binary 并注入 Standalone provider；同时依赖 `MLRun` / `MLService` / `MLTrafficPolicy` API packages，在 `internal/runtime/standalone` 进程内实现 Compute Service 发布的 `computeruntime.ComputeRuntime` 接口，并注入到 Compute 模块。该实现驱动 Docker Engine Adapter、volume、network 和 Traefik file provider 并采集运行态。Docker Engine Adapter、配置型资源目录和 Compose 资产由独立 `axisml-lite` 仓库维护。
 
-monorepo 为三个 System 服务提供公共装配 API：
+AxisML 主仓库为三个 System 服务提供公共装配 API：
 
 ```text
 axisml-system/<service>/pkg/module
@@ -162,13 +162,13 @@ axisml-system/<service>/pkg/module
 
 后台 loop（Compute reconciler 与 status poller、Artifact Hub GC worker）经 `App.Runnables()` 交由宿主启动，或由 `Serve` 自行启动，二者互斥（`Runnables()` 与 `Serve` 只有一方能认领这组 loop）。数据库、静态 pool/tenant 配置、logger 与运行参数分别由 `WithDB` / `WithStaticConfig` / `WithLogger` / `WithSettings` 注入。典型宿主用法：`core.New` 后调用 `app.Migrate()`，把 `app.RegisterRoutes(r.Group("/axisml"))` 挂到宿主自有 `*gin.Engine`，在同一 engine 上追加自有路由，并用 `app.Runnables()` 启动后台 loop。
 
-axisml-core 作为库被外部项目消费时，因同仓模块尚未发布版本，外部 `go.mod` 需用 `replace` 指向本机 AxisML checkout（axisml-core 及其 6 个同仓依赖）；待 `scripts/publish-modules.sh` 打出各 module 的 `<subdir>/vX.Y.Z` tag 后，可去除 `replace` 直接 `go get github.com/axisml/axisml/axisml-lite/axisml-core@<version>`。仅 doc-gen 用的 `pkg/openapigen`、`pkg/configdoc` 不在发布集内——其两个生成命令置于独立的 dev-only `axisml-core/tools` module，Go 1.17+ 的 module graph pruning 会把它们从 axisml-core 的构建图中裁掉，外部消费者无需解析。
+axisml-core 作为库被外部项目消费时，当前需在外部 `go.mod` 中分别 `replace` 新仓库的 axisml-core 与 AxisML 主仓库中的传递模块；Go 不会传递依赖模块自己的 `replace`。共享 modules 与 axisml-core 发布版本后，可移除这些本地路径并直接 `go get github.com/axisml/axisml-lite/axisml-core@<version>`。仅 doc-gen 使用的 `pkg/openapigen`、`pkg/configdoc` 留在独立的 dev-only `axisml-core/tools` module，不进入可嵌入库的构建图。
 
 依赖与发布规则：
 
-- `axisml-core` 作为 monorepo 内的单个 Go module，通过 `go.mod` 的仓库内 `replace` 指令依赖 System 组件模块（Cluster Manager、Compute Service、Artifact Hub 三个 `pkg/module`，以及 workload contract API packages），与其余组件在同一提交中同步演进。
+- `axisml-core` 是独立仓库中的 Go module；过渡期通过本地 `replace` 依赖兄弟 AxisML checkout，依赖升级必须显式同步并验证。
 - Lite release 固定一组兼容的 Platform 镜像、System module 和数据库 schema 版本，不使用浮动 `latest`。
-- monorepo 内的公共装配 API 对各形态保持稳定契约。
+- AxisML 主仓库的公共装配 API 对 Standard 与 Lite 两种形态保持稳定契约。
 - OpenAPI DTO、migration 和领域状态机由 System 组件生成和维护。
 
 ### 3.3 配置
@@ -742,7 +742,7 @@ Job、Service、Workspace、TensorBoard 和 TrafficPolicy 在目标环境通过 
 
 1. **Contract 准备**：在 Compute Service 公共包中发布 Runtime contract，包括 CR apply / observe、MLRun / MLService instance list / logs / events、资源级 events、共享默认值、不可变字段检查、Spec 校验、Status 映射和 §4.2 的共享命名 helper。
 2. **公共装配面与 Kubernetes adapter**：为 Cluster Manager、Compute Service 和 Artifact Hub 提供 `pkg/module` API；在 Compute Service 内以 adapter 封装现有 `client.Client`、informer 和 kubeproxy，并接入现有 Standard binary；Standard handler 独立接入共享命名、`main` container 名和公共 labels，Lite 运行链路不依赖 `compute-operator`。
-3. **Lite 基础控制面**：创建 `axisml-lite` 目录，构建内置 Standalone Runtime 的 `axisml-core`，接入 `axisml-platform`、Compose、PostgreSQL、zot、S3 和 Traefik。
+3. **Lite 基础控制面**：在独立 `axisml-lite` 仓库构建内置 Standalone Runtime 的 `axisml-core`，接入 `axisml-platform`、Compose、PostgreSQL、zot、S3 和 Traefik。
 4. **Run 能力**：Docker job、Kubernetes Pod / Event 投影、日志、取消、状态收敛和 CPU/memory/GPU limits。
 5. **Service 能力**：deployment/stateful workload、volume、health、scale、路由。
 6. **流量与制品闭环**：TrafficPolicy、模型/数据集注入、Workspace/TensorBoard。
@@ -754,7 +754,7 @@ Job、Service、Workspace、TensorBoard 和 TrafficPolicy 在目标环境通过 
 
 | 决策项 | 决策 |
 | --- | --- |
-| 代码组织 | AxisML monorepo 顶层 `axisml-lite/`，Go module 落在 `axisml-core/`，经 `go.mod` 仓库内 `replace` 指令依赖公共装配 API 与 workload contract，构建单一 `axisml-core` 镜像 |
+| 代码组织 | 独立 `axisml-lite` 仓库，Go module 落在 `axisml-core/`；过渡期经本地 `replace` 依赖兄弟 AxisML checkout，构建单一 `axisml-core` 镜像 |
 | 部署入口 | Docker Compose 管固定服务，`axisml-core` 内置的 Standalone Compute Runtime 动态管用户 workload |
 | Standalone binary | `axisml-platform` + `axisml-core`；`axisml-core` 装配三个 System 服务并进程内实现 `ComputeRuntime` 的 Standalone Runtime，独占 Docker socket |
 | 运行时 | Docker Engine API |
@@ -774,8 +774,8 @@ Job、Service、Workspace、TensorBoard 和 TrafficPolicy 在目标环境通过 
 
 - [AxisML 高层设计](../../docs/high_level_design.md)
 - [配置手册](../../docs/configuration.md)
-- [System 层概要](../../axisml-system/docs/system_design/overview.md)
-- [Compute Service](../../axisml-system/docs/system_design/compute-service.md)
-- [Compute Operator](../../axisml-system/docs/system_design/compute-operator.md)
-- [Cluster Manager](../../axisml-system/docs/system_design/cluster-manager.md)
-- [Artifact Hub](../../axisml-system/docs/system_design/artifact-hub.md)
+- [System 层概要](https://github.com/AxisML/axisml/blob/main/axisml-system/docs/system_design/overview.md)
+- [Compute Service](https://github.com/AxisML/axisml/blob/main/axisml-system/docs/system_design/compute-service.md)
+- [Compute Operator](https://github.com/AxisML/axisml/blob/main/axisml-system/docs/system_design/compute-operator.md)
+- [Cluster Manager](https://github.com/AxisML/axisml/blob/main/axisml-system/docs/system_design/cluster-manager.md)
+- [Artifact Hub](https://github.com/AxisML/axisml/blob/main/axisml-system/docs/system_design/artifact-hub.md)
