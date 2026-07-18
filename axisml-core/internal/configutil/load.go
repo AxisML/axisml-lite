@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/viper"
 )
 
-const envPrefix = "AXISML"
+var envPrefixPattern = regexp.MustCompile(`^[A-Z][A-Z0-9_]*$`)
 
 type Field struct {
 	Path    string
@@ -24,11 +25,14 @@ type Field struct {
 	value   reflect.Value
 }
 
-// Load resolves defaults, AXISML_ environment overrides, and file-mounted
-// secrets into the supplied configuration value.
-func Load(into any) error {
+// Load resolves defaults, environment overrides under envPrefix, and
+// file-mounted secrets into the supplied configuration value.
+func Load(into any, envPrefix string) error {
+	if err := validateEnvPrefix(envPrefix); err != nil {
+		return err
+	}
 	v := viper.New()
-	fields := Walk(into)
+	fields := Walk(into, envPrefix)
 	for _, field := range fields {
 		v.SetDefault(field.Path, field.Default)
 	}
@@ -61,14 +65,15 @@ func Load(into any) error {
 	return nil
 }
 
-// Walk returns configuration leaf metadata in declaration order.
-func Walk(into any) []Field {
+// Walk returns configuration leaf metadata in declaration order, using
+// envPrefix to derive every field's environment variable name.
+func Walk(into any, envPrefix string) []Field {
 	var out []Field
-	walk(reflect.ValueOf(into).Elem(), nil, &out)
+	walk(reflect.ValueOf(into).Elem(), nil, envPrefix, &out)
 	return out
 }
 
-func walk(v reflect.Value, prefix []string, out *[]Field) {
+func walk(v reflect.Value, prefix []string, envPrefix string, out *[]Field) {
 	t := v.Type()
 	for i := 0; i < t.NumField(); i++ {
 		sf := t.Field(i)
@@ -87,7 +92,7 @@ func walk(v reflect.Value, prefix []string, out *[]Field) {
 			path = append(append([]string{}, prefix...), name)
 		}
 		if fv.Kind() == reflect.Struct && fv.Type().PkgPath() != "time" {
-			walk(fv, path, out)
+			walk(fv, path, envPrefix, out)
 			continue
 		}
 		dotted := strings.Join(path, ".")
@@ -96,6 +101,13 @@ func walk(v reflect.Value, prefix []string, out *[]Field) {
 			Default: sf.Tag.Get("default"), Secret: sf.Tag.Get("secret") == "true", Doc: sf.Tag.Get("doc"), value: fv,
 		})
 	}
+}
+
+func validateEnvPrefix(prefix string) error {
+	if !envPrefixPattern.MatchString(prefix) || strings.HasSuffix(prefix, "_") {
+		return fmt.Errorf("invalid environment variable prefix %q: must match [A-Z][A-Z0-9_]* and must not end with an underscore", prefix)
+	}
+	return nil
 }
 
 func parseTag(tag string) (string, bool) {

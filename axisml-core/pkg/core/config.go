@@ -13,11 +13,12 @@ import (
 
 // Config is the axisml-core process configuration. Lite runs under Docker
 // Compose, where the environment is the idiomatic config mechanism, so this
-// binary reads NO config file — every key is sourced from AXISML_ env (secrets
-// also accept AXISML_<KEY>_FILE). A single binary fronts all three System
-// modules, so the database and OCI settings are shared. Everything operational
-// (ports, reconcile cadence, GC, filesystem paths, Docker network) is a fixed
-// constant — see consts.go.
+// binary reads NO config file. Load uses the AXISML prefix by default; embedded
+// callers can select another prefix with LoadWithOptions. Secret keys also
+// accept a corresponding <PREFIX>_<KEY>_FILE variable. A single binary fronts
+// all three System modules, so the database and OCI settings are shared.
+// Everything operational (ports, reconcile cadence, GC, filesystem paths,
+// Docker network) is a fixed constant — see consts.go.
 type Config struct {
 	Common `mapstructure:",squash"`
 
@@ -47,11 +48,33 @@ type OCI struct {
 	AdminPassword string `mapstructure:"admin_password" secret:"true" doc:"OCI registry admin password"`
 }
 
+// DefaultEnvPrefix is the environment variable prefix used by Load and by
+// LoadWithOptions when EnvPrefix is empty.
+const DefaultEnvPrefix = "AXISML"
+
+// LoadOptions controls how axisml-core loads its process configuration.
+type LoadOptions struct {
+	// EnvPrefix does not include a trailing underscore, for example AXISML or
+	// AIOSML. An empty value uses DefaultEnvPrefix.
+	EnvPrefix string
+}
+
 // Load resolves the configuration from defaults < AXISML_ env < AXISML_<KEY>_FILE
 // secret files. axisml-core reads no config file (env-only).
 func Load() (Config, error) {
+	return LoadWithOptions(LoadOptions{EnvPrefix: DefaultEnvPrefix})
+}
+
+// LoadWithOptions resolves the configuration from defaults, then environment
+// variables under the selected prefix, then the selected prefix's secret
+// *_FILE variables. It does not read or merge variables under other prefixes.
+func LoadWithOptions(opts LoadOptions) (Config, error) {
+	prefix := opts.EnvPrefix
+	if prefix == "" {
+		prefix = DefaultEnvPrefix
+	}
 	var c Config
-	if err := configutil.Load(&c); err != nil {
+	if err := configutil.Load(&c, prefix); err != nil {
 		return Config{}, err
 	}
 	return c, nil

@@ -39,7 +39,7 @@ func newGPUAllocator(devices []int) *gpuAllocator {
 	return &gpuAllocator{schedulable: out}
 }
 
-// ResolveGPUDevices parses the AXISML_GPU_DEVICES value into the set of
+// ResolveGPUDevices parses the gpu.devices configuration value into the set of
 // schedulable physical GPU indices. A comma list ("0,1,2") turns on managed
 // scheduling over exactly those cards; empty turns managed scheduling OFF, in
 // which case GPU workloads fall back to Docker's default count-based request.
@@ -57,7 +57,7 @@ func ResolveGPUDevices(spec string) ([]int, error) {
 		}
 		n, err := strconv.Atoi(part)
 		if err != nil || n < 0 {
-			return nil, fmt.Errorf("invalid GPU device index %q in AXISML_GPU_DEVICES", part)
+			return nil, fmt.Errorf("invalid GPU device index %q in gpu.devices", part)
 		}
 		if !seen[n] {
 			seen[n] = true
@@ -255,7 +255,7 @@ func (r *Runtime) createPlans(ctx context.Context, kind, namespace, name string,
 			r.log.Info("image pull failed, trying local", "image", p.Image, "err", err.Error())
 		}
 	}
-	// Managed GPU scheduling only kicks in when AXISML_GPU_DEVICES names a card
+	// Managed GPU scheduling only kicks in when gpu.devices names a card
 	// set. Otherwise GPU plans keep their count-based request and Docker's NVIDIA
 	// runtime picks the cards (toDocker falls back to DeviceRequest.Count).
 	need := 0

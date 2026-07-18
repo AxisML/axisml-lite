@@ -121,7 +121,7 @@ func (p *ContainerPlan) toDocker(net string) (*container.Config, *container.Host
 			Capabilities: [][]string{{"gpu"}},
 		}}
 	case p.Resources.GPUCount > 0:
-		// Unmanaged mode (AXISML_GPU_DEVICES unset): Docker's default count-based
+		// Unmanaged mode (gpu.devices unset): Docker's default count-based
 		// request — the NVIDIA runtime picks the cards.
 		host.DeviceRequests = []container.DeviceRequest{{
 			Driver:       "nvidia",

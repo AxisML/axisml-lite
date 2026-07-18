@@ -63,7 +63,7 @@ type Config struct {
 	HostPathVolumes map[string]string
 	// GPUDevices is the set of physical GPU indices the host has handed to
 	// AxisML for scheduling. Empty disables GPU scheduling (GPU workloads stay
-	// Pending). Resolved from AXISML_GPU_DEVICES via ResolveGPUDevices.
+	// Pending). Resolved from gpu.devices via ResolveGPUDevices.
 	GPUDevices []int
 }
 

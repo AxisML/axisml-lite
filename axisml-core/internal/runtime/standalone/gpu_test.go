@@ -23,6 +23,8 @@ func TestResolveGPUDevices(t *testing.T) {
 	t.Run("invalid index errors", func(t *testing.T) {
 		_, err := ResolveGPUDevices("0,x")
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "gpu.devices")
+		assert.NotContains(t, err.Error(), "AXISML_GPU_DEVICES")
 		_, err = ResolveGPUDevices("-1")
 		require.Error(t, err)
 	})

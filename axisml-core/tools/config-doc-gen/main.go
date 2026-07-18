@@ -21,7 +21,7 @@ func section(name string, into any) string {
 	b.WriteString("Configuration source: **environment only** — this binary reads no config file. Each key below is supplied as its `AXISML_` variable.\n\n")
 	b.WriteString("| Key | Environment variable | Default | Secret | Description |\n")
 	b.WriteString("|---|---|---|---|---|\n")
-	for _, field := range configutil.Walk(into) {
+	for _, field := range configutil.Walk(into, core.DefaultEnvPrefix) {
 		env, def, secret := "`"+field.EnvVar+"`", mdCode(field.Default), "—"
 		if field.Secret {
 			env, def, secret = "`"+field.EnvVar+"`<br>`"+field.EnvVar+"_FILE`", "—", "yes"
