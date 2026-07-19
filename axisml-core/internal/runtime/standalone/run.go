@@ -23,20 +23,21 @@ func (r *Runtime) renderRunPlans(run *mlrunv1alpha1.MLRun) ([]ContainerPlan, err
 			run.Spec.Backend.Name, run.Spec.Backend.Engine)
 	}
 	ns, name := run.Namespace, run.Name
+	configMaps, err := newConfigMapSet(run.Spec.ConfigMaps)
+	if err != nil {
+		return nil, err
+	}
 	var plans []ContainerPlan
 	for _, role := range run.Spec.Roles {
 		if role.Replicas <= 0 {
 			continue
 		}
 		tmpl := role.Template
-		if len(tmpl.EnvFrom) > 0 {
-			return nil, capabilityError("MLRun role %q envFrom is unsupported in Lite", role.Name)
-		}
-		env, err := envToStrings(tmpl.Env)
+		env, err := resolveEnv(configMaps, tmpl.EnvFrom, tmpl.Env)
 		if err != nil {
 			return nil, err
 		}
-		mounts, err := r.volumeMounts(ns, name, tmpl.Volumes, tmpl.VolumeMounts)
+		mounts, err := r.volumeMounts(KindRun, ns, name, role.Name, configMaps, tmpl.Volumes, tmpl.VolumeMounts)
 		if err != nil {
 			return nil, err
 		}
@@ -109,6 +110,9 @@ func (r *Runtime) ApplyMLRun(ctx context.Context, desired *mlrunv1alpha1.MLRun) 
 	ns, name := desired.Namespace, desired.Name
 	plans, err := r.renderRunPlans(desired)
 	if err != nil {
+		return err
+	}
+	if err := r.reconcileConfigMapProjections(KindRun, ns, name, plans); err != nil {
 		return err
 	}
 	existing, err := r.listContainers(ctx, KindRun, ns, name)
@@ -269,6 +273,9 @@ func (r *Runtime) DeleteMLRun(ctx context.Context, key types.NamespacedName) err
 		if err := r.removeContainer(ctx, c.ID); err != nil {
 			return err
 		}
+	}
+	if err := r.removeConfigMapProjections(KindRun, key.Namespace, key.Name); err != nil {
+		return err
 	}
 	r.clearCancelled(key.Namespace, key.Name)
 	if len(conts) > 0 {

@@ -143,6 +143,8 @@ func New(ctx context.Context, cfg Config, opts ...Option) (app *App, err error) 
 	rt := standalone.New(dcli, standalone.Config{
 		WorkloadsNetwork: o.settings.WorkloadsNetwork,
 		TraefikDir:       o.settings.GatewayConfigDir,
+		ConfigMapsDir:    o.settings.WorkloadConfigDir,
+		ConfigMapsVolume: o.settings.WorkloadConfigVolume,
 		HostPathVolumes:  tenantsHostPathVolumes(static.Tenants),
 		GPUDevices:       gpuDevices,
 	}, log.WithName("runtime"))

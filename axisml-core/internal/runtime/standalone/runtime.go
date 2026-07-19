@@ -56,6 +56,14 @@ type Config struct {
 	WorkloadsNetwork string
 	// TraefikDir is the Traefik file-provider dynamic config directory.
 	TraefikDir string
+	// ConfigMapsDir is the filesystem root where workload ConfigMap volume
+	// projections are materialized. In the Lite image it is the mount point of
+	// ConfigMapsVolume, so both axisml-core and workload containers see the same
+	// files through the Docker volume.
+	ConfigMapsDir string
+	// ConfigMapsVolume is the Docker volume that backs ConfigMapsDir. Empty uses
+	// ConfigMapsDir itself as a host bind source (useful for an embedded host).
+	ConfigMapsVolume string
 	// HostPathVolumes maps a predefined data volume's name (= the claim name a
 	// workload mounts) to a host directory. A workload that mounts such a volume
 	// by name gets the host path bind-mounted instead of a managed Docker volume.
