@@ -24,8 +24,10 @@ const (
 	DefaultDatasetBucket = "axisml-artifact-hub"
 
 	// Filesystem layout (fixed by the image / Compose mounts).
-	DefaultPoolConfigDir    = "/etc/axisml/pools"       // Cluster Manager pool + tenant YAML (resourcepools/ + tenants/ subdirs)
-	DefaultGatewayConfigDir = "/var/lib/axisml/traefik" // Traefik file-provider dynamic config
+	DefaultPoolConfigDir        = "/etc/axisml/pools"          // Cluster Manager pool + tenant YAML (resourcepools/ + tenants/ subdirs)
+	DefaultGatewayConfigDir     = "/var/lib/axisml/traefik"    // Traefik file-provider dynamic config
+	DefaultWorkloadConfigDir    = "/var/lib/axisml/configmaps" // workload-owned ConfigMap volume projections
+	DefaultWorkloadConfigVolume = "axisml-configmaps"          // shared Docker volume mounted at DefaultWorkloadConfigDir
 
 	// Docker network dynamic workloads join (Traefik also joins it). Shared
 	// with the Compose networks: block and the binary's idempotent EnsureNetwork.
@@ -64,6 +66,14 @@ type Settings struct {
 	// filesystem, written per service / traffic policy.
 	GatewayConfigDir string
 
+	// WorkloadConfigDir is where the Standalone runtime materializes files for
+	// workload-owned ConfigMap volumes. WorkloadConfigVolume names the Docker
+	// volume mounted there by the Lite Compose stack. An embedded host may leave
+	// WorkloadConfigVolume empty to bind WorkloadConfigDir directly instead, as
+	// long as the Docker daemon sees that directory at the same absolute path.
+	WorkloadConfigDir    string
+	WorkloadConfigVolume string
+
 	// WorkloadsNetwork is the Docker network dynamic workloads (and Traefik) join.
 	WorkloadsNetwork string
 }
@@ -73,14 +83,16 @@ type Settings struct {
 // it needs.
 func DefaultSettings() Settings {
 	return Settings{
-		APIBindAddress:    DefaultAPIBindAddress,
-		ReconcileInterval: DefaultReconcileInterval,
-		GCInterval:        DefaultGCInterval,
-		UploadingTTL:      DefaultUploadingTTL,
-		UploadTokenTTL:    DefaultUploadTokenTTL,
-		DatasetBucket:     DefaultDatasetBucket,
-		PoolConfigDir:     DefaultPoolConfigDir,
-		GatewayConfigDir:  DefaultGatewayConfigDir,
-		WorkloadsNetwork:  DefaultWorkloadsNetwork,
+		APIBindAddress:       DefaultAPIBindAddress,
+		ReconcileInterval:    DefaultReconcileInterval,
+		GCInterval:           DefaultGCInterval,
+		UploadingTTL:         DefaultUploadingTTL,
+		UploadTokenTTL:       DefaultUploadTokenTTL,
+		DatasetBucket:        DefaultDatasetBucket,
+		PoolConfigDir:        DefaultPoolConfigDir,
+		GatewayConfigDir:     DefaultGatewayConfigDir,
+		WorkloadConfigDir:    DefaultWorkloadConfigDir,
+		WorkloadConfigVolume: DefaultWorkloadConfigVolume,
+		WorkloadsNetwork:     DefaultWorkloadsNetwork,
 	}
 }

@@ -70,6 +70,7 @@ services:
       # resourcepools/*.yaml + tenants/*.yaml, one or more of each)
       - ./config:/etc/axisml/pools:ro
       - traefik-dynamic:/var/lib/axisml/traefik
+      - axisml-configmaps:/var/lib/axisml/configmaps
     networks: [axisml-control]
 
   # OCI registry backing artifact-hub (axisml-core points at http://zot:5000), so
@@ -154,3 +155,5 @@ volumes:
   zotdata:
   rustfsdata:
   traefik-dynamic:
+  axisml-configmaps:
+    name: axisml-configmaps

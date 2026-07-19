@@ -3,9 +3,9 @@ module github.com/axisml/axisml-lite/axisml-core
 go 1.26.0
 
 require (
-	github.com/axisml/axisml/axisml-system/artifact-hub v0.0.1
-	github.com/axisml/axisml/axisml-system/cluster-manager v0.0.1
-	github.com/axisml/axisml/axisml-system/compute-service v0.0.1
+	github.com/axisml/axisml/axisml-system/artifact-hub v0.0.2
+	github.com/axisml/axisml/axisml-system/cluster-manager v0.0.2
+	github.com/axisml/axisml/axisml-system/compute-service v0.0.2
 	github.com/containerd/errdefs v1.0.0
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/docker/go-connections v0.6.0
@@ -45,7 +45,7 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/axisml/axisml/axisml-system/apis v0.0.1
+	github.com/axisml/axisml/axisml-system/apis v0.0.2
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.15.0 // indirect

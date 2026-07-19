@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
@@ -29,10 +30,11 @@ func (r *Runtime) renderServicePlans(svc *mlservicev1alpha1.MLService) ([]Contai
 	}
 	role := svc.Spec.Roles[0]
 	tmpl := role.Template
-	if len(tmpl.EnvFrom) > 0 {
-		return nil, capabilityError("MLService envFrom is unsupported in Lite")
+	configMaps, err := newConfigMapSet(svc.Spec.ConfigMaps)
+	if err != nil {
+		return nil, err
 	}
-	env, err := envToStrings(tmpl.Env)
+	env, err := resolveEnv(configMaps, tmpl.EnvFrom, tmpl.Env)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +44,7 @@ func (r *Runtime) renderServicePlans(svc *mlservicev1alpha1.MLService) ([]Contai
 	for _, p := range tmpl.Ports {
 		ports = append(ports, PortPlan{Name: p.Name, ContainerPort: p.ContainerPort, Protocol: protoString(p.Protocol)})
 	}
-	mounts, err := r.volumeMounts(ns, name, tmpl.Volumes, tmpl.VolumeMounts)
+	mounts, err := r.volumeMounts(KindService, ns, name, roleOr(role.Name), configMaps, tmpl.Volumes, tmpl.VolumeMounts)
 	if err != nil {
 		return nil, err
 	}
@@ -77,13 +79,15 @@ func (r *Runtime) renderServicePlans(svc *mlservicev1alpha1.MLService) ([]Contai
 // by MLService and MLRun rendering, so a training run mounts a dataset volume by
 // exactly the same rules a service mounts its workspace. Resolution order per
 // mount:
+//   - a workload-owned ConfigMap → a read-only projection in the shared
+//     ConfigMapsVolume (or a host bind for an embedded runtime);
 //   - a predefined host-path volume (claim name registered in cfg.HostPathVolumes)
 //     → a bind mount to the host directory (Lite-only "hostPath" support);
 //   - a PVC-backed volume → the managed Docker volume keyed on its claim name —
 //     the same name the VolumeManager (Runtime.Ensure / Runtime.Delete)
 //     materialises and reclaims, so mount, provision and retention target agree;
 //   - any other declared volume → a per-(namespace, name, volume) managed volume.
-func (r *Runtime) volumeMounts(namespace, name string, volumes []corev1.Volume, volumeMounts []corev1.VolumeMount) ([]MountPlan, error) {
+func (r *Runtime) volumeMounts(kind, namespace, name, role string, configMaps configMapSet, volumes []corev1.Volume, volumeMounts []corev1.VolumeMount) ([]MountPlan, error) {
 	if len(volumeMounts) == 0 {
 		return nil, nil
 	}
@@ -100,6 +104,38 @@ func (r *Runtime) volumeMounts(namespace, name string, volumes []corev1.Volume, 
 		subPath, err := validateSubPath(vm)
 		if err != nil {
 			return nil, err
+		}
+		if vol.ConfigMap != nil {
+			if subPath != "" {
+				return nil, capabilityError("ConfigMap volumeMount %q subPath is unsupported in Lite", vm.Name)
+			}
+			files, err := configMapFiles(configMaps, vol.ConfigMap)
+			if err != nil {
+				return nil, fmt.Errorf("volume %q: %w", vol.Name, err)
+			}
+			projection, err := projectionPath(kind, namespace, name, role, vol.Name)
+			if err != nil {
+				return nil, err
+			}
+			mount := MountPlan{
+				Target:         vm.MountPath,
+				ReadOnly:       true,
+				ConfigMapPath:  projection,
+				ConfigMapFiles: files,
+			}
+			if r.cfg.ConfigMapsVolume != "" {
+				mount.Type = "volume"
+				mount.Source = r.cfg.ConfigMapsVolume
+				mount.SubPath = projection
+			} else {
+				if r.cfg.ConfigMapsDir == "" {
+					return nil, capabilityError("ConfigMap volume projection is not configured in Lite")
+				}
+				mount.Type = "bind"
+				mount.Source = filepath.Join(r.cfg.ConfigMapsDir, filepath.FromSlash(projection))
+			}
+			mounts = append(mounts, mount)
+			continue
 		}
 		if hp := r.hostPathFor(vol); hp != "" {
 			mounts = append(mounts, MountPlan{
@@ -178,6 +214,9 @@ func (r *Runtime) ApplyMLService(ctx context.Context, desired *mlservicev1alpha1
 	ns, name := desired.Namespace, desired.Name
 	plans, err := r.renderServicePlans(desired)
 	if err != nil {
+		return err
+	}
+	if err := r.reconcileConfigMapProjections(KindService, ns, name, plans); err != nil {
 		return err
 	}
 	existing, err := r.listContainers(ctx, KindService, ns, name)
@@ -303,6 +342,9 @@ func (r *Runtime) DeleteMLService(ctx context.Context, key types.NamespacedName)
 		}
 	}
 	if err := r.deleteServiceRoute(key.Namespace, key.Name); err != nil {
+		return err
+	}
+	if err := r.removeConfigMapProjections(KindService, key.Namespace, key.Name); err != nil {
 		return err
 	}
 	// Volumes are NOT removed here: their lifecycle follows the retention policy

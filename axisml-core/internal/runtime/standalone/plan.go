@@ -47,13 +47,16 @@ type PortPlan struct {
 // instead of the whole volume — so several runs can share one volume and each
 // see a different subtree. It is always a cleaned, relative path (no leading
 // "/" and no ".." escape); volumeMounts validates it before constructing the
-// plan.
+// plan. ConfigMapPath and ConfigMapFiles carry the desired file projection for
+// reconciliation; the Docker adapter uses the ordinary Source/SubPath fields.
 type MountPlan struct {
-	Type     string // "volume" | "bind"
-	Source   string
-	Target   string
-	SubPath  string
-	ReadOnly bool
+	Type           string // "volume" | "bind"
+	Source         string
+	Target         string
+	SubPath        string
+	ReadOnly       bool
+	ConfigMapPath  string
+	ConfigMapFiles map[string]ConfigMapFile
 }
 
 // ResourcePlan carries the cgroup limits + GPU request derived from the spec.
@@ -173,19 +176,6 @@ func dockerPort(p PortPlan) nat.Port {
 	}
 	port, _ := nat.NewPort(proto, strconv.Itoa(int(p.ContainerPort)))
 	return port
-}
-
-// envToStrings converts the curated EnvVar subset to KEY=VALUE strings. ValueFrom
-// references are unsupported in Lite and reported as a capability error.
-func envToStrings(env []corev1.EnvVar) ([]string, error) {
-	out := make([]string, 0, len(env))
-	for _, e := range env {
-		if e.ValueFrom != nil {
-			return nil, capabilityError("env[%s].valueFrom is unsupported in Lite", e.Name)
-		}
-		out = append(out, e.Name+"="+e.Value)
-	}
-	return out, nil
 }
 
 // resourcePlan derives cgroup limits + GPU count from a Pod template's limits.
