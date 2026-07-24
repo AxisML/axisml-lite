@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/distribution/reference"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
@@ -18,21 +19,51 @@ import (
 // into an API request. It is the unit-test object for CR → container rendering
 // (design §6.1).
 type ContainerPlan struct {
-	Name          string
-	NamePrefix    string
-	Replica       int
-	StableOrdinal bool
-	Image         string
-	Command       []string // entrypoint
-	Args          []string // cmd
-	Env           []string // KEY=VALUE
-	WorkingDir    string
-	Labels        map[string]string
-	Ports         []PortPlan
-	Mounts        []MountPlan
-	Resources     ResourcePlan
-	RestartPolicy string // "no" | "unless-stopped"
-	Healthcheck   *HealthPlan
+	Name            string
+	NamePrefix      string
+	Replica         int
+	StableOrdinal   bool
+	Image           string
+	ImagePullPolicy corev1.PullPolicy
+	Command         []string // entrypoint
+	Args            []string // cmd
+	Env             []string // KEY=VALUE
+	WorkingDir      string
+	Labels          map[string]string
+	Ports           []PortPlan
+	Mounts          []MountPlan
+	Resources       ResourcePlan
+	RestartPolicy   string // "no" | "unless-stopped"
+	Healthcheck     *HealthPlan
+}
+
+// resolveImagePullPolicy applies the Kubernetes defaulting rules locally. Lite
+// receives the API types directly rather than through Kubernetes admission, so
+// an omitted policy would otherwise remain empty.
+func resolveImagePullPolicy(imageRef string, policy corev1.PullPolicy) (corev1.PullPolicy, error) {
+	switch policy {
+	case corev1.PullAlways, corev1.PullIfNotPresent, corev1.PullNever:
+		return policy, nil
+	case "":
+		// Default below based on the image reference.
+	default:
+		return "", capabilityError("unsupported imagePullPolicy %q", policy)
+	}
+
+	named, err := reference.ParseNormalizedNamed(imageRef)
+	if err != nil {
+		return "", capabilityError("invalid image reference %q: %v", imageRef, err)
+	}
+	if _, ok := named.(reference.Digested); ok {
+		return corev1.PullIfNotPresent, nil
+	}
+	if tagged, ok := named.(reference.Tagged); ok {
+		if tagged.Tag() == "latest" {
+			return corev1.PullAlways, nil
+		}
+		return corev1.PullIfNotPresent, nil
+	}
+	return corev1.PullAlways, nil
 }
 
 // PortPlan is a container port projection.

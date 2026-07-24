@@ -2,6 +2,8 @@ package standalone
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -11,6 +13,8 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/client"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // managedFilter builds a label filter that selects this installation's managed
@@ -52,16 +56,71 @@ func (r *Runtime) ensureNetwork(ctx context.Context, name string) error {
 	return nil
 }
 
-// pullImage pulls an image and drains the progress stream. Best-effort: a pull
-// failure surfaces to the caller, which rolls back the apply.
-func (r *Runtime) pullImage(ctx context.Context, ref string) error {
-	rc, err := r.cli.ImagePull(ctx, ref, image.PullOptions{})
+// imageEngineClient is the Docker image API subset used by the pull-policy
+// implementation. Keeping it narrow makes all policy branches testable without
+// a Docker daemon.
+type imageEngineClient interface {
+	ImageInspect(ctx context.Context, imageID string, inspectOpts ...client.ImageInspectOption) (image.InspectResponse, error)
+	ImagePull(ctx context.Context, ref string, options image.PullOptions) (io.ReadCloser, error)
+}
+
+// pullImage pulls an image and consumes Docker's JSON progress stream. Pull
+// failures such as authentication and missing manifests are often reported in
+// the stream after the HTTP request succeeds, so draining it with io.Copy is
+// not sufficient.
+func pullImage(ctx context.Context, cli imageEngineClient, ref string) error {
+	rc, err := cli.ImagePull(ctx, ref, image.PullOptions{})
 	if err != nil {
 		return fmt.Errorf("pull image %q: %w", ref, err)
 	}
 	defer func() { _ = rc.Close() }()
-	_, _ = io.Copy(io.Discard, rc)
-	return nil
+	dec := json.NewDecoder(rc)
+	for {
+		var msg struct {
+			Error       string `json:"error"`
+			ErrorDetail *struct {
+				Message string `json:"message"`
+			} `json:"errorDetail"`
+		}
+		if err := dec.Decode(&msg); err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+			return fmt.Errorf("read pull response for image %q: %w", ref, err)
+		}
+		if msg.ErrorDetail != nil && msg.ErrorDetail.Message != "" {
+			return fmt.Errorf("pull image %q: %s", ref, msg.ErrorDetail.Message)
+		}
+		if msg.Error != "" {
+			return fmt.Errorf("pull image %q: %s", ref, msg.Error)
+		}
+	}
+}
+
+// ensureImage enforces Kubernetes-compatible image pull semantics before a
+// container is created.
+func ensureImage(ctx context.Context, cli imageEngineClient, ref string, policy corev1.PullPolicy) error {
+	switch policy {
+	case corev1.PullAlways:
+		return pullImage(ctx, cli, ref)
+	case corev1.PullIfNotPresent:
+		if _, err := cli.ImageInspect(ctx, ref); err == nil {
+			return nil
+		} else if !cerrdefs.IsNotFound(err) {
+			return fmt.Errorf("inspect image %q: %w", ref, err)
+		}
+		return pullImage(ctx, cli, ref)
+	case corev1.PullNever:
+		if _, err := cli.ImageInspect(ctx, ref); err != nil {
+			if cerrdefs.IsNotFound(err) {
+				return fmt.Errorf("image %q is not present locally and imagePullPolicy is Never", ref)
+			}
+			return fmt.Errorf("inspect image %q: %w", ref, err)
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported imagePullPolicy %q for image %q", policy, ref)
+	}
 }
 
 // createAndStart creates a container from the plan and starts it. It returns

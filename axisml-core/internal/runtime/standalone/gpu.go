@@ -245,14 +245,16 @@ func computeAssignment(schedulable []int, busy map[int]struct{}, untracked int, 
 	return out, nil
 }
 
-// createPlans pulls images (outside the allocation lock), atomically reserves
-// GPUs for any plans that need them, then creates and starts the containers.
+// createPlans prepares images according to each plan's pull policy (outside the
+// allocation lock), atomically reserves GPUs for any plans that need them, then
+// creates and starts the containers.
 // When a card is unavailable it returns without creating anything, so a
 // multi-replica workload never half-occupies the host.
 func (r *Runtime) createPlans(ctx context.Context, kind, namespace, name string, toCreate []*ContainerPlan) error {
 	for _, p := range toCreate {
-		if err := r.pullImage(ctx, p.Image); err != nil {
-			r.log.Info("image pull failed, trying local", "image", p.Image, "err", err.Error())
+		if err := ensureImage(ctx, r.cli, p.Image, p.ImagePullPolicy); err != nil {
+			r.events.record(kind, namespace, name, "", "ImagePullFailed", err.Error())
+			return err
 		}
 	}
 	// Managed GPU scheduling only kicks in when gpu.devices names a card

@@ -53,6 +53,7 @@ func TestRenderRunPlans(t *testing.T) {
 	assert.Equal(t, 0, p.Replica)
 	assert.False(t, p.StableOrdinal)
 	assert.Equal(t, "busybox:latest", p.Image)
+	assert.Equal(t, corev1.PullAlways, p.ImagePullPolicy)
 	assert.Equal(t, []string{"sh", "-c"}, p.Command)
 	assert.Equal(t, []string{"echo hi"}, p.Args)
 	assert.Equal(t, []string{"FOO=bar"}, p.Env)
@@ -221,6 +222,7 @@ func TestRenderServicePlans(t *testing.T) {
 	assert.Empty(t, p.Name)
 	assert.Equal(t, "infer-predictor", p.NamePrefix)
 	assert.False(t, p.StableOrdinal)
+	assert.Equal(t, corev1.PullIfNotPresent, p.ImagePullPolicy)
 	assert.Equal(t, string("unless-stopped"), p.RestartPolicy)
 	require.Len(t, p.Ports, 1)
 	assert.Equal(t, int32(80), p.Ports[0].ContainerPort)
@@ -282,6 +284,54 @@ func TestPlanIdentityExcludesGPUDeviceIDs(t *testing.T) {
 	twoCards.Resources.GPUCount = 2
 	assert.NotEqual(t, specHash(planIdentity(&base)), specHash(planIdentity(&twoCards)),
 		"a different GPU request count must change the spec hash")
+}
+
+func TestResolveImagePullPolicy(t *testing.T) {
+	digest := "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	tests := []struct {
+		name     string
+		image    string
+		explicit corev1.PullPolicy
+		want     corev1.PullPolicy
+	}{
+		{name: "untagged", image: "busybox", want: corev1.PullAlways},
+		{name: "registry port is not a tag", image: "localhost:5000/team/image", want: corev1.PullAlways},
+		{name: "latest", image: "busybox:latest", want: corev1.PullAlways},
+		{name: "non-latest tag", image: "busybox:1.37", want: corev1.PullIfNotPresent},
+		{name: "digest", image: "busybox@" + digest, want: corev1.PullIfNotPresent},
+		{name: "tag and digest", image: "busybox:latest@" + digest, want: corev1.PullIfNotPresent},
+		{name: "explicit always", image: "busybox:1.37", explicit: corev1.PullAlways, want: corev1.PullAlways},
+		{name: "explicit if not present", image: "busybox:latest", explicit: corev1.PullIfNotPresent, want: corev1.PullIfNotPresent},
+		{name: "explicit never", image: "busybox:latest", explicit: corev1.PullNever, want: corev1.PullNever},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := resolveImagePullPolicy(tt.image, tt.explicit)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestResolveImagePullPolicyRejectsInvalidValues(t *testing.T) {
+	_, err := resolveImagePullPolicy("busybox", corev1.PullPolicy("Sometimes"))
+	var ce *CapabilityError
+	require.ErrorAs(t, err, &ce)
+
+	_, err = resolveImagePullPolicy("INVALID/IMAGE", "")
+	require.ErrorAs(t, err, &ce)
+}
+
+func TestPlanIdentityIncludesImagePullPolicy(t *testing.T) {
+	ifNotPresent := ContainerPlan{
+		Image:           "busybox:1.37",
+		ImagePullPolicy: corev1.PullIfNotPresent,
+	}
+	always := ifNotPresent
+	always.ImagePullPolicy = corev1.PullAlways
+
+	assert.NotEqual(t, specHash(planIdentity(&ifNotPresent)), specHash(planIdentity(&always)),
+		"changing imagePullPolicy must rebuild the container")
 }
 
 func TestToDockerBindsAssignedDevices(t *testing.T) {

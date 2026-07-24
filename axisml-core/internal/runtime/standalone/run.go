@@ -33,6 +33,10 @@ func (r *Runtime) renderRunPlans(run *mlrunv1alpha1.MLRun) ([]ContainerPlan, err
 			continue
 		}
 		tmpl := role.Template
+		pullPolicy, err := resolveImagePullPolicy(tmpl.Image, tmpl.ImagePullPolicy)
+		if err != nil {
+			return nil, err
+		}
 		env, err := resolveEnv(configMaps, tmpl.EnvFrom, tmpl.Env)
 		if err != nil {
 			return nil, err
@@ -46,17 +50,18 @@ func (r *Runtime) renderRunPlans(run *mlrunv1alpha1.MLRun) ([]ContainerPlan, err
 			labels[LabelRole] = role.Name
 			labels[LabelReplicaIndex] = formatLabelInt(i)
 			p := ContainerPlan{
-				NamePrefix:    instanceBase(run, role.Name),
-				Replica:       i,
-				Image:         tmpl.Image,
-				Command:       tmpl.Command,
-				Args:          tmpl.Args,
-				Env:           env,
-				WorkingDir:    tmpl.WorkingDir,
-				Labels:        labels,
-				Mounts:        mounts,
-				Resources:     resourcePlan(tmpl.Resources),
-				RestartPolicy: string(container.RestartPolicyDisabled),
+				NamePrefix:      instanceBase(run, role.Name),
+				Replica:         i,
+				Image:           tmpl.Image,
+				ImagePullPolicy: pullPolicy,
+				Command:         tmpl.Command,
+				Args:            tmpl.Args,
+				Env:             env,
+				WorkingDir:      tmpl.WorkingDir,
+				Labels:          labels,
+				Mounts:          mounts,
+				Resources:       resourcePlan(tmpl.Resources),
+				RestartPolicy:   string(container.RestartPolicyDisabled),
 			}
 			p.Labels[LabelSpecHash] = specHash(planIdentity(&p))
 			plans = append(plans, p)
@@ -75,21 +80,22 @@ func (r *Runtime) renderRunPlans(run *mlrunv1alpha1.MLRun) ([]ContainerPlan, err
 // a running container on every re-apply.
 func planIdentity(p *ContainerPlan) any {
 	return struct {
-		Image      string
-		Command    []string
-		Args       []string
-		Env        []string
-		WorkingDir string
-		Ports      []PortPlan
-		Mounts     []MountPlan
-		Resources  struct {
+		Image           string
+		ImagePullPolicy corev1.PullPolicy
+		Command         []string
+		Args            []string
+		Env             []string
+		WorkingDir      string
+		Ports           []PortPlan
+		Mounts          []MountPlan
+		Resources       struct {
 			NanoCPUs    int64
 			MemoryBytes int64
 			GPUCount    int
 		}
 		RestartPolicy string
 	}{
-		p.Image, p.Command, p.Args, p.Env, p.WorkingDir, p.Ports, p.Mounts,
+		p.Image, p.ImagePullPolicy, p.Command, p.Args, p.Env, p.WorkingDir, p.Ports, p.Mounts,
 		struct {
 			NanoCPUs    int64
 			MemoryBytes int64

@@ -30,6 +30,10 @@ func (r *Runtime) renderServicePlans(svc *mlservicev1alpha1.MLService) ([]Contai
 	}
 	role := svc.Spec.Roles[0]
 	tmpl := role.Template
+	pullPolicy, err := resolveImagePullPolicy(tmpl.Image, tmpl.ImagePullPolicy)
+	if err != nil {
+		return nil, err
+	}
 	configMaps, err := newConfigMapSet(svc.Spec.ConfigMaps)
 	if err != nil {
 		return nil, err
@@ -55,19 +59,20 @@ func (r *Runtime) renderServicePlans(svc *mlservicev1alpha1.MLService) ([]Contai
 		labels[LabelRole] = roleOr(role.Name)
 		labels[LabelReplicaIndex] = formatLabelInt(i)
 		p := ContainerPlan{
-			NamePrefix:    instanceBase(svc, roleOr(role.Name)),
-			Replica:       i,
-			StableOrdinal: svc.Spec.Backend.Engine == "statefulset",
-			Image:         tmpl.Image,
-			Command:       tmpl.Command,
-			Args:          tmpl.Args,
-			Env:           env,
-			WorkingDir:    tmpl.WorkingDir,
-			Labels:        labels,
-			Ports:         ports,
-			Mounts:        mounts,
-			Resources:     resourcePlan(tmpl.Resources),
-			RestartPolicy: string(container.RestartPolicyUnlessStopped),
+			NamePrefix:      instanceBase(svc, roleOr(role.Name)),
+			Replica:         i,
+			StableOrdinal:   svc.Spec.Backend.Engine == "statefulset",
+			Image:           tmpl.Image,
+			ImagePullPolicy: pullPolicy,
+			Command:         tmpl.Command,
+			Args:            tmpl.Args,
+			Env:             env,
+			WorkingDir:      tmpl.WorkingDir,
+			Labels:          labels,
+			Ports:           ports,
+			Mounts:          mounts,
+			Resources:       resourcePlan(tmpl.Resources),
+			RestartPolicy:   string(container.RestartPolicyUnlessStopped),
 		}
 		p.Labels[LabelSpecHash] = specHash(planIdentity(&p))
 		plans = append(plans, p)
